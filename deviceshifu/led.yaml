@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deviceshifu-led-deployment
+  name: deviceshifu-led-deployment
+  namespace: deviceshifu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deviceshifu-led-deployment
+  template:
+    metadata:
+      labels:
+        app: deviceshifu-led-deployment
+    spec:
+      containers:
+      - image: edgehub/deviceshifu-http-opcua:v0.50.0
+        name: deviceshifu-http
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: deviceshifu-config
+          mountPath: "/etc/edgedevice/config"
+          readOnly: true
+        - name: edgedevice-certificate
+          mountPath: "/etc/edgedevice/certificate"
+          readOnly: true
+        env:
+        - name: EDGEDEVICE_NAME
+          value: "edgedevice-led"
+        - name: EDGEDEVICE_NAMESPACE
+          value: "devices"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: deviceshifu-config
+        configMap:
+          name: configmap-led
+      - name: edgedevice-certificate
+        configMap:
+          name: edgedevice-led-certificate
+          optional: true
+      serviceAccountName: edgedevice-sa
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-led
+  namespace: deviceshifu
+data:
+  driverProperties: |
+    driverSku: LED OPC UA
+    driverImage:
+  instructions: |
+    instructions:
+      number:
+        protocolPropertyList:
+          OPCUANodeID: "ns=1;s=number"
+      light:
+        protocolPropertyList:
+          OPCUANodeID: "ns=1;s=light"
+      get_start_time:
+        protocolPropertyList:
+          OPCUANodeID: "i=2257"
+      get_server:
+        protocolPropertyList:
+          OPCUANodeID: "i=2261"
+      get_status:
+        protocolPropertyList:
+          OPCUANodeID: "i=2259"
+  telemetries: |
+    telemetrySettings:
+      telemetryUpdateIntervalInMiliseconds: 1000
+    telemetries:
+      device_health:
+        properties:
+          instruction: get_server
+          initialDelayMs: 1000
+          intervalMs: 1000
+---
+apiVersion: shifu.edgenesis.io/v1alpha1
+kind: EdgeDevice
+metadata:
+  name: edgedevice-led
+  namespace: devices
+spec:
+  sku: "OPC UA LED"
+  connection: Ethernet
+  address: opc.tcp://bj-hikcamera-01.saifai.cn:44840
+  protocol: OPCUA
+  protocolSettings:
+    OPCUASetting:
+      SecurityMode: None
+      ConnectionTimeoutInMilliseconds: 5000
+      AuthenticationMode: Anonymous
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deviceshifu-led-deployment
+  name: deviceshifu-led
+  namespace: deviceshifu
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: deviceshifu-led-deployment
+  type: LoadBalancer

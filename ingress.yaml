@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shifu-ingress
+  namespace: deviceshifu
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /deviceshifu-camera(/|$)(.*)
+        backend:
+          service:
+            name: deviceshifu-camera
+            port:
+              number: 80
+      - pathType: Prefix
+        path: /deviceshifu-plc(/|$)(.*)
+        backend:
+          service:
+            name: deviceshifu-plc
+            port:
+              number: 80
+      - pathType: Prefix
+        path: /deviceshifu-led(/|$)(.*)
+        backend:
+          service:
+            name: deviceshifu-led
+            port:
+              number: 80

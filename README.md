@@ -1,5 +1,10 @@
 # Shifu Function Calling Demo
 
+## Video
+
+[![Shifu Function Calling Demo](https://img.youtube.com/vi/wWAQqhLwn8Y/0.jpg)](https://www.youtube.com/watch?v=wWAQqhLwn8Y)
+
+
 ## Prepare
 
 Before running the demo, you need to install the following tools:
